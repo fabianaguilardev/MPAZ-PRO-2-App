@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
+import cl.duoc.mpazpro.ui.components.LectorInstrucciones
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cl.duoc.mpazpro.viewmodel.student.StudentActivityViewModel
 
@@ -164,6 +166,16 @@ fun StudentActivityScreen(
 
     var mostrarPista by remember { mutableStateOf(false) }
     var audioReproduciendo by remember { mutableStateOf(false) }
+    var audioNoDisponible by remember { mutableStateOf(false) }
+
+    // Lector de voz en español. Se crea una vez y se libera al salir de la pantalla.
+    val contexto = LocalContext.current
+    val lector = remember {
+        LectorInstrucciones(contexto) { audioReproduciendo = false }
+    }
+    DisposableEffect(Unit) {
+        onDispose { lector.liberar() }
+    }
 
 
     val indiceSeguro = indiceActual.coerceIn(
@@ -183,6 +195,8 @@ fun StudentActivityScreen(
         opcionSeleccionada = null
         mostrarPista = false
         audioReproduciendo = false
+        audioNoDisponible = false
+        lector.detener() // Cortamos la lectura de la pregunta anterior.
         delay(600) // Transicion de carga fluida
         estaCargando = false
     }
@@ -356,7 +370,17 @@ fun StudentActivityScreen(
 
                             // Boton de Audio Instruccional (Apoyo a la lectura)
                             FilledTonalButton(
-                                onClick = { audioReproduciendo = !audioReproduciendo },
+                                onClick = {
+                                    if (audioReproduciendo) {
+                                        lector.detener()
+                                        audioReproduciendo = false
+                                    } else {
+                                        // Si no hay voz en español, mostramos el aviso.
+                                        val leyendo = lector.leer(actividadActual.audioInstruccion)
+                                        audioReproduciendo = leyendo
+                                        audioNoDisponible = !leyendo
+                                    }
+                                },
                                 modifier = Modifier.fillMaxWidth().height(48.dp)
                             ) {
                                 Icon(
@@ -367,6 +391,16 @@ fun StudentActivityScreen(
                                 Text(
                                     text = if (audioReproduciendo) "Pausar Audio" else "Escuchar Instrucción",
                                     style = MaterialTheme.typography.titleSmall
+                                )
+                            }
+
+                            if (audioNoDisponible) {
+                                Text(
+                                    text = "No hay voz en español disponible en este dispositivo.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.padding(top = 8.dp),
+                                    textAlign = TextAlign.Center
                                 )
                             }
 
