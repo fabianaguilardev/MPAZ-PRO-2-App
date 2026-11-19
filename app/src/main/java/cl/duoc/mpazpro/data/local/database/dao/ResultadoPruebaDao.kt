@@ -39,6 +39,10 @@ interface ResultadoPruebaDao {
     @Query("SELECT * FROM resultados_prueba ORDER BY fechaRegistro DESC")
     fun obtenerHistorial(): Flow<List<ResultadoPruebaEntity>>
 
+    // Cuenta cuántas veces un estudiante ya rindió un objetivo (un registro = un intento).
+    @Query("SELECT COUNT(*) FROM resultados_prueba WHERE estudianteFicticioId = :estudianteId AND oaId = :oaId")
+    suspend fun contarIntentos(estudianteId: Int, oaId: Int): Int
+
     @Query("DELETE FROM resultados_prueba")
     suspend fun borrarTodos()
 }

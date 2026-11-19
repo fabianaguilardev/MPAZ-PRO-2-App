@@ -571,6 +571,9 @@ fun StudentActivityScreen(
 
                                             // Permitimos guardar una nueva evaluación.
                                             studentViewModel.reiniciarGuardado()
+
+                                            // Recargamos para volver a comprobar el límite de intentos.
+                                            studentViewModel.cargarActividades(if (oaId > 0) oaId else null)
                                         },
                                         modifier = Modifier
                                             .fillMaxWidth()
