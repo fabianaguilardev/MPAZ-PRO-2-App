@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.filled.Info
@@ -68,6 +69,7 @@ fun StudentHomeScreen(
     onBack: () -> Unit,
     onSelectMateria: (Int) -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToHistorial: () -> Unit,
     homeViewModel: StudentHomeViewModel = viewModel()
 ) {
     val scrollState = rememberScrollState()
@@ -214,6 +216,27 @@ fun StudentHomeScreen(
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = "Mi Credencial y Perfil Escolar",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            // Acceso al CRUD de resultados guardados en el microservicio
+            OutlinedButton(
+                onClick = onNavigateToHistorial,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Cloud,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Mi Historial en el Servidor",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
                 )

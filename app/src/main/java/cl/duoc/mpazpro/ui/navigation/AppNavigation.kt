@@ -32,6 +32,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import cl.duoc.mpazpro.ui.screens.student.ProfileCameraScreen
+import cl.duoc.mpazpro.ui.screens.student.ResultadosRemotosScreen
 import cl.duoc.mpazpro.ui.screens.student.StudentActivityScreen
 import cl.duoc.mpazpro.ui.screens.student.StudentHomeScreen
 import cl.duoc.mpazpro.ui.screens.teacher.ExportReportScreen
@@ -86,7 +87,13 @@ fun AppNavigation(
                 onSelectMateria = { oaId ->
                     navController.navigate(AppScreens.ActividadesEstudiante.createRoute(oaId))
                 },
-                onNavigateToProfile = { navController.navigate(AppScreens.PerfilCamara.route) }
+                onNavigateToProfile = { navController.navigate(AppScreens.PerfilCamara.route) },
+                onNavigateToHistorial = { navController.navigate(AppScreens.HistorialServidor.route) }
+            )
+        }
+        composable(AppScreens.HistorialServidor.route) {
+            ResultadosRemotosScreen(
+                onBack = { navController.popBackStack() }
             )
         }
         composable(AppScreens.FormularioDocente.route) {
