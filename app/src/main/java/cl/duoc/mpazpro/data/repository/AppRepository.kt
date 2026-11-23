@@ -133,6 +133,10 @@ class AppRepository(
         resultadoDao.insertarTodos(resultados)
     }
 
+    // Cantidad de intentos ya registrados por un estudiante en un objetivo.
+    suspend fun contarIntentos(estudianteId: Int, oaId: Int): Int =
+        resultadoDao.contarIntentos(estudianteId, oaId)
+
     // Modifica un resultado almacenado.
     suspend fun actualizarResultado(resultado: ResultadoPruebaEntity) =
         resultadoDao.actualizar(resultado)

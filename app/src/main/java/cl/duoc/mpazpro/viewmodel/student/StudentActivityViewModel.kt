@@ -78,6 +78,11 @@ class StudentActivityViewModel(
 
     private var jobCarga: Job? = null
 
+    companion object {
+        // Estudiante ficticio hasta que exista identificación real.
+        const val ESTUDIANTE_FICTICIO_ID = 1
+    }
+
     /**
      * Consulta las actividades mediante el repositorio.
      * Si se proporciona un oaId válido (> 0), filtra solo las actividades de esa materia desde Room.
@@ -90,6 +95,16 @@ class StudentActivityViewModel(
             _mensajeError.value = null
 
             try {
+                // Si el estudiante ya agotó sus intentos, no cargamos la prueba.
+                if (oaId != null && oaId > 0) {
+                    val mensaje = mensajeIntentosAgotados(oaId, ESTUDIANTE_FICTICIO_ID)
+                    if (mensaje != null) {
+                        _mensajeError.value = mensaje
+                        _estaCargando.value = false
+                        return@launch
+                    }
+                }
+
                 val flow = if (oaId != null && oaId > 0) {
                     repository.obtenerActividadesPorObjetivo(oaId)
                 } else {
@@ -107,6 +122,28 @@ class StudentActivityViewModel(
                 }
             }
         }
+    }
+
+    /**
+     * Máximo de intentos que definió el docente para el objetivo,
+     * o null si no configuró la asignatura (en ese caso no hay límite).
+     */
+    private fun maxIntentosDe(oaId: Int): Int? {
+        val asignatura = obtenerNombreAsignatura(oaId)
+        return ConfiguracionEvaluacion.obtenerParametros(context, asignatura)?.maxIntentos
+    }
+
+    /**
+     * Devuelve el mensaje de error si el estudiante ya usó todos sus
+     * intentos en el objetivo, o null si todavía puede rendir.
+     * Compara los intentos registrados en Room con el máximo del docente.
+     */
+    private suspend fun mensajeIntentosAgotados(oaId: Int, estudianteId: Int): String? {
+        val max = maxIntentosDe(oaId) ?: return null
+        val usados = repository.contarIntentos(estudianteId, oaId)
+        return if (usados >= max) {
+            "Alcanzaste el máximo de $max intento(s) en ${obtenerNombreAsignatura(oaId)}."
+        } else null
     }
 
     /**
@@ -162,7 +199,7 @@ class StudentActivityViewModel(
      */
     fun guardarResultados(
         respuestas: Map<Int, Boolean>,
-        estudianteId: Int = 1
+        estudianteId: Int = ESTUDIANTE_FICTICIO_ID
     ) {
 
         // Evitamos iniciar un nuevo guardado si ya hay
@@ -192,6 +229,21 @@ class StudentActivityViewModel(
                 val actividadesPorObjetivo =
                     preguntas.groupBy { it.oaId }
 
+                // Intentos ya registrados por objetivo. Con esto aplicamos el
+                // límite del docente y numeramos el intento que se guardará.
+                val intentosPrevios = actividadesPorObjetivo.keys.associateWith {
+                    repository.contarIntentos(estudianteId, it)
+                }
+
+                // Si algún objetivo ya llegó al máximo, no se guarda nada.
+                val agotado = actividadesPorObjetivo.keys.firstNotNullOfOrNull { oaId ->
+                    mensajeIntentosAgotados(oaId, estudianteId)
+                }
+                if (agotado != null) {
+                    _mensajeError.value = agotado
+                    return@launch
+                }
+
                 // Calculamos el puntaje de cada objetivo.
                 val resultados = actividadesPorObjetivo.map { (oaId, actividades) ->
 
@@ -208,9 +260,8 @@ class StudentActivityViewModel(
                         oaId = oaId,
                         puntaje = puntaje,
 
-                        // Por ahora representa la cantidad de preguntas
-                        // del objetivo, no los reintentos individuales.
-                        intentosUsados = actividades.size,
+                        // Número de intento: los ya guardados + este.
+                        intentosUsados = (intentosPrevios[oaId] ?: 0) + 1,
 
                         fechaRegistro = System.currentTimeMillis()
                     )

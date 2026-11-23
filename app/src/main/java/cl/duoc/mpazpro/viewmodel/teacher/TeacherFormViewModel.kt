@@ -24,17 +24,27 @@ import java.time.format.DateTimeParseException
  * También encapsula la persistencia en SharedPreferences (ConfiguracionEvaluacion)
  * y en Room (DocenteEntity) para que la pantalla no acceda directamente a la capa de datos.
  */
-class TeacherFormViewModel(application: Application) : AndroidViewModel(application) {
+class TeacherFormViewModel(
+    application: Application,
+    private val repository: AppRepository
+) : AndroidViewModel(application) {
+
+    /**
+     * Constructor secundario: crea el repositorio con Room para que la pantalla
+     * pueda instanciar el ViewModel sin conocer la base de datos.
+     * El constructor principal permite inyectar un repositorio falso en las pruebas.
+     */
+    constructor(application: Application) : this(
+        application,
+        AppRepository(AppDatabase.getDatabase(application.applicationContext))
+    )
 
     private val context = application.applicationContext
-    private val repository: AppRepository
 
     private val _uiState = MutableStateFlow(TeacherFormUiState())
     val uiState: StateFlow<TeacherFormUiState> = _uiState.asStateFlow()
 
     init {
-        val database = AppDatabase.getDatabase(context)
-        repository = AppRepository(database)
         // Cargar configuración previa de la asignatura por defecto
         cargarConfigDesdePreferences(_uiState.value.asignatura)
     }
