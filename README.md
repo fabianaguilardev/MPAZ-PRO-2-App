@@ -351,6 +351,7 @@ La cobertura se mide sobre la lógica de integración con el servidor. Las panta
 
 ![Pruebas unitarias](docs/capturas/test-resultados-42.png)
 ![Cobertura del repositorio](docs/capturas/jacoco-repositorio.png)
+![Cobertura del ViewModel](docs/capturas/jacoco-viewmodel.png)
 
 ---
 
