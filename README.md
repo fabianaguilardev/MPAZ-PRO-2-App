@@ -6,14 +6,14 @@ Aplicación móvil Android desarrollada en **Kotlin y Jetpack Compose** para el 
 - **Institución:** Duoc UC
 - **Evaluación:** Evaluación Parcial 2 / Evaluación Parcial 3
 - **Plataforma:** Android
-- **Modalidad:** Aplicación local con persistencia de datos
+- **Modalidad:** Aplicación Android con persistencia local (Room) e integración con microservicios Spring Boot ejecutados en el computador
 
 ---
 
 ## Integrantes del Equipo
 
 - **Miguel Pastén**
-- **Alberto Aguilar**
+- **Fabián Aguilar**
 
 ---
 
@@ -74,6 +74,11 @@ El proyecto contempla tres perfiles dentro del contexto del sistema:
 - **Preferencias locales:** SharedPreferences.
 - **Gestión de estados:** StateFlow y MutableStateFlow.
 - **Concurrencia:** Kotlin Coroutines.
+- **Consumo de API REST:** Retrofit 2 con convertidor Gson.
+- **Backend local:** Spring Boot 3 (Java 17) con H2, repositorio [mpaz-backend](https://github.com/miguelpastenm-web/mpaz-backend).
+- **Pruebas unitarias:** Kotest, MockK y kotlinx-coroutines-test sobre JUnit Platform.
+- **Cobertura:** JaCoCo (reporte de Android Gradle Plugin).
+- **Distribución:** APK release firmado con keystore `.jks`.
 - **Acceso a datos:** DAO y patrón Repository.
 - **Animaciones:** AnimatedVisibility, transiciones Fade/Slide y animateContentSize.
 - **Recursos nativos:** Cámara del dispositivo y Storage Access Framework (SAF).
@@ -277,6 +282,99 @@ Entre los elementos implementados se encuentran:
 Se utilizan componentes como `AnimatedVisibility`, `CircularProgressIndicator` y `animateContentSize`.
 
 El botón **Escuchar Instrucción** presenta el texto de apoyo de la actividad. La reproducción de audio real no forma parte de las funcionalidades verificadas de esta versión.
+
+---
+
+## Integración con Microservicios (Retrofit)
+
+La app consume el backend local [mpaz-backend](https://github.com/miguelpastenm-web/mpaz-backend), formado por `ms-resultados` (puerto 9081) y `ms-contenidos` (puerto 9082). Los endpoints y las instrucciones para levantarlos están en el README de ese repositorio.
+
+Flujo de una operación (patrón MVVM):
+
+```
+Pantalla (Compose) → ViewModel (StateFlow) → Repository (Result<T>) → API Retrofit → ms-resultados → H2
+```
+
+| Capa | Archivo |
+|---|---|
+| Cliente Retrofit | `data/remote/RetrofitClient.kt` |
+| Interfaz de la API | `data/remote/ResultadosApi.kt` |
+| Modelo de transferencia | `data/remote/dto/ResultadoDto.kt` |
+| Repositorio | `data/repository/ResultadosRemoteRepository.kt` |
+| ViewModel | `viewmodel/student/ResultadosRemotosViewModel.kt` |
+| Pantalla | `ui/screens/student/ResultadosRemotosScreen.kt` |
+
+- **Dirección del servidor:** el emulador accede al computador mediante `http://10.0.2.2:9081/` (resultados) y `http://10.0.2.2:9082/` (contenidos).
+- **Permisos:** `INTERNET` y `usesCleartextTraffic` en el `AndroidManifest.xml`, porque el backend local usa HTTP.
+- **Manejo de errores:** el repositorio traduce cada respuesta a un `Result`. Informa los códigos 400 y 404, los errores del servidor y la falta de conexión, y no oculta la cancelación de corrutinas.
+- **CRUD:** desde el perfil **Estudiante**, el botón con ícono de nube abre **Historial en el servidor**, donde se listan, crean, editan y eliminan resultados.
+
+![Historial en el servidor](docs/capturas/historial-servidor.png)
+
+### Ejecutar el backend
+
+Con Java 17, en una terminal por cada microservicio:
+
+```bash
+cd mpaz-backend/ms-resultados
+./mvnw spring-boot:run
+```
+
+El backend debe estar encendido antes de abrir la pantalla **Historial en el servidor**.
+
+---
+
+## Pruebas Unitarias y Cobertura
+
+Las pruebas usan **Kotest** (`FunSpec`), **MockK** y **kotlinx-coroutines-test** sobre JUnit Platform. La red se simula con mocks de `ResultadosApi`, por lo que no requieren el backend encendido.
+
+```bash
+./gradlew testDebugUnitTest
+```
+
+Resultado actual: **42 pruebas, 0 fallas**.
+
+Reporte de cobertura con JaCoCo:
+
+```bash
+./gradlew createDebugUnitTestCoverageReport
+```
+
+El reporte HTML queda en `app/build/reports/coverage/test/debug/index.html`.
+
+| Clase | Cobertura de instrucciones |
+|---|---|
+| `ResultadosRemoteRepository` | 100 % (ramas 100 %) |
+| `ResultadosRemotosViewModel` | 89 % |
+
+La cobertura se mide sobre la lógica de integración con el servidor. Las pantallas Compose no tienen pruebas unitarias.
+
+![Pruebas unitarias](docs/capturas/test-resultados-42.png)
+![Cobertura del repositorio](docs/capturas/jacoco-repositorio.png)
+
+---
+
+## APK Firmado
+
+- **APK release:** `release/mpaz-pro-release.apk`
+- **Keystore:** `keystore/mpaz-release.jks` (alias `mpaz`). Las credenciales de firma están en `app/build.gradle.kts` y su uso es solo académico.
+- **Configuración:** bloque `signingConfigs` y `buildTypes.release` en `app/build.gradle.kts`.
+
+Para generarlo:
+
+```bash
+./gradlew assembleRelease
+```
+
+El APK queda en `app/build/outputs/apk/release/app-release.apk`.
+
+Para verificar la firma:
+
+```bash
+apksigner verify --verbose release/mpaz-pro-release.apk
+```
+
+La evidencia de la verificación y del keystore está en `docs/capturas/`.
 
 ---
 
