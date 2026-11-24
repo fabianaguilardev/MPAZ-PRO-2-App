@@ -19,11 +19,22 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Firma digital del APK release (keystore incluido en el repositorio por requisito del proyecto)
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file("keystore/mpaz-release.jks")
+            storePassword = "mpaz2026"
+            keyAlias = "mpaz"
+            keyPassword = "mpaz2026"
+        }
+    }
+
     buildTypes {
         debug {
             enableUnitTestCoverage = true
         }
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
