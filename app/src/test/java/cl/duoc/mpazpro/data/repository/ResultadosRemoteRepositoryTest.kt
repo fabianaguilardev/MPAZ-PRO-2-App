@@ -4,13 +4,16 @@ import cl.duoc.mpazpro.data.remote.ResultadosApi
 import cl.duoc.mpazpro.data.remote.dto.ResultadoDto
 import cl.duoc.mpazpro.respuestaExitosa
 import cl.duoc.mpazpro.respuestaFallida
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import java.io.IOException
+import kotlinx.coroutines.CancellationException
 
 /**
  * Pruebas del repositorio remoto. Se mockea ResultadosApi (la red) para probar
@@ -96,5 +99,15 @@ class ResultadosRemoteRepositoryTest : FunSpec({
 
         resultadoLlamada.isFailure shouldBe true
         resultadoLlamada.exceptionOrNull()?.message shouldContain "No se pudo conectar"
+    }
+
+    test("una cancelacion de la corrutina no se oculta como error de red") {
+        coEvery { api.listar(any(), any()) } throws CancellationException("cancelado")
+
+        shouldThrow<CancellationException> { repository.listar() }
+    }
+
+    test("el repositorio se puede crear con el cliente Retrofit por defecto") {
+        ResultadosRemoteRepository() shouldNotBe null
     }
 })
