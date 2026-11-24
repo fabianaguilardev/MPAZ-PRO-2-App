@@ -504,9 +504,9 @@ Estas pruebas permitieron comprobar el funcionamiento de las características pr
 Por tratarse de un proyecto académico desarrollado como MVP, existen aspectos que pueden ampliarse en futuras versiones:
 
 - La identificación de estudiantes utiliza registros simulados.
-- El máximo de intentos configurable todavía no limita efectivamente la cantidad de evaluaciones realizadas.
+- El máximo de intentos se aplica solo cuando el docente configuró la asignatura; si no la configuró, el estudiante no tiene límite. Los intentos se cuentan sobre el estudiante simulado.
 - La selección de asignatura del formulario docente no controla automáticamente todas las actividades que aparecen al estudiante.
-- La reproducción de audio real para las instrucciones todavía no está implementada.
+- La lectura en voz alta de las instrucciones depende del motor Text-to-Speech y del idioma español instalados en el dispositivo; si no están disponibles, no se reproduce.
 - Los reportes representan los resultados efectivamente almacenados, pero no disponen de información real de matrícula del establecimiento.
 - El sistema puede ampliarse con gestión integral de usuarios, cursos y evaluaciones.
 
@@ -516,9 +516,7 @@ Por tratarse de un proyecto académico desarrollado como MVP, existen aspectos q
 
 - Incorporar autenticación y perfiles de usuario.
 - Registrar estudiantes y cursos reales.
-- Implementar el control efectivo de intentos por evaluación.
 - Aplicar automáticamente los parámetros docentes a la selección de actividades.
-- Incorporar lectura de instrucciones mediante Text-to-Speech.
 - Ampliar la cantidad de actividades y objetivos de aprendizaje.
 - Generar reportes adicionales en PDF.
 - Incorporar nuevas visualizaciones del progreso académico.
