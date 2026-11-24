@@ -14,6 +14,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 
 /**
  * Pruebas del repositorio remoto. Se mockea ResultadosApi (la red) para probar
@@ -109,5 +110,19 @@ class ResultadosRemoteRepositoryTest : FunSpec({
 
     test("el repositorio se puede crear con el cliente Retrofit por defecto") {
         ResultadosRemoteRepository() shouldNotBe null
+    }
+
+    test("las cinco operaciones funcionan cuando la llamada de red se suspende antes de responder") {
+        coEvery { api.listar(any(), any()) } coAnswers { delay(1); respuestaExitosa(listOf(resultado)) }
+        coEvery { api.obtener(1) } coAnswers { delay(1); respuestaExitosa(resultado) }
+        coEvery { api.crear(resultado) } coAnswers { delay(1); respuestaExitosa(resultado) }
+        coEvery { api.actualizar(1, resultado) } coAnswers { delay(1); respuestaExitosa(resultado) }
+        coEvery { api.eliminar(1) } coAnswers { delay(1); respuestaExitosa(Unit) }
+
+        repository.listar().getOrNull() shouldBe listOf(resultado)
+        repository.obtener(1).getOrNull() shouldBe resultado
+        repository.crear(resultado).getOrNull() shouldBe resultado
+        repository.actualizar(1, resultado).getOrNull() shouldBe resultado
+        repository.eliminar(1).isSuccess shouldBe true
     }
 })
