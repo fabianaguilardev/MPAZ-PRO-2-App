@@ -152,6 +152,7 @@ class StudentActivityViewModel(
             .filter { it.asignaturaId in 1..4 && (asignaturaId == null || it.asignaturaId == asignaturaId) }
         if (objetivos.isEmpty()) return null
         val publicados = objetivos.filter { it.autorizado }
+        if (publicados.isEmpty()) return emptyList()
         return publicados.flatMap { objetivo ->
             contenidos.listarActividades(objetivo.id).getOrThrow().map { actividad ->
                 ActividadEntity(
@@ -167,7 +168,7 @@ class StudentActivityViewModel(
                     alternativaIncorrecta3 = actividad.alternativaIncorrecta3.orEmpty()
                 )
             }
-        }
+        }.takeIf { it.isNotEmpty() }
     }
 
     /**

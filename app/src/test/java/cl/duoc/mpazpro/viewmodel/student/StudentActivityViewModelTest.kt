@@ -122,6 +122,21 @@ class StudentActivityViewModelTest {
     }
 
     @Test
+    fun cargarActividades_conObjetivoRemotoSinActividadesConservaLasPreguntasDeRoom() {
+        val api = mockk<ContenidosApi>()
+        val objetivo = ObjetivoDto(17, 2, "MA02 OA 01", "Sumas", true)
+        coEvery { api.listarObjetivos() } returns respuestaExitosa(listOf(objetivo))
+        coEvery { api.listarActividades(17) } returns respuestaExitosa(emptyList())
+        conectarContenidos(api)
+
+        viewModel.cargarActividades(2)
+
+        assertEquals(actividades, viewModel.actividades.value)
+        assertNull(viewModel.mensajeError.value)
+        assertFalse(viewModel.estaCargando.value)
+    }
+
+    @Test
     fun cargarActividades_sinConexionMuestraAvisoYCargaRoom() {
         val api = mockk<ContenidosApi>()
         coEvery { api.listarObjetivos() } throws IOException("sin conexión")
