@@ -9,12 +9,15 @@ import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import okhttp3.HttpUrl
+import okhttp3.MediaType
 import okhttp3.ResponseBody
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
+import retrofit2.HttpException
+import retrofit2.Response
 
 class DogCeoRepositoryTest {
     private val url = "https://images.dog.ceo/breeds/beagle/foto.jpg"
@@ -65,6 +68,37 @@ class DogCeoRepositoryTest {
         val fallo = repository.obtenerFoto().exceptionOrNull()
         assertTrue(fallo is IOException)
         assertEquals(error.message, fallo?.message)
+    }
+
+    @Test
+    fun devuelveElErrorHttpDelEndpointSinIntentarDescargar() = runBlocking {
+        val cuerpo = ResponseBody.create(MediaType.get("application/json"), """{"status":"error"}""")
+        coEvery { api.obtenerFotoAleatoria() } throws HttpException(Response.error<FotoPerroDto>(503, cuerpo))
+
+        val fallo = repository.obtenerFoto().exceptionOrNull() as? HttpException
+
+        assertEquals(503, fallo?.code())
+        coVerify(exactly = 0) { api.descargarFoto(any()) }
+    }
+
+    @Test
+    fun devuelve404SiLaFotoYaNoEstaDisponible() = runBlocking {
+        val cuerpo = ResponseBody.create(null, "")
+        coEvery { api.obtenerFotoAleatoria() } returns FotoPerroDto(url, "success")
+        coEvery { api.descargarFoto(any()) } throws HttpException(Response.error<ResponseBody>(404, cuerpo))
+
+        val fallo = repository.obtenerFoto().exceptionOrNull() as? HttpException
+
+        assertEquals(404, fallo?.code())
+    }
+
+    @Test
+    fun aceptaUnaFotoQueOcupaExactamenteElLimite() = runBlocking {
+        val datos = ByteArray(5 * 1024 * 1024)
+        coEvery { api.obtenerFotoAleatoria() } returns FotoPerroDto(url, "success")
+        coEvery { api.descargarFoto(any()) } answers { ResponseBody.create(null, datos) }
+
+        assertArrayEquals(datos, repository.obtenerFoto().getOrThrow())
     }
 
     @Test

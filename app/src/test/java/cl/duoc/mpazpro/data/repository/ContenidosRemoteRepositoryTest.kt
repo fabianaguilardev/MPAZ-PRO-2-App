@@ -6,10 +6,14 @@ import cl.duoc.mpazpro.data.remote.dto.ObjetivoRequest
 import com.google.gson.JsonParser
 import java.io.IOException
 import java.util.concurrent.LinkedBlockingQueue
+import io.mockk.coEvery
+import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import okhttp3.MediaType
@@ -127,6 +131,63 @@ class ContenidosRemoteRepositoryTest {
     @Test
     fun distingueLaFaltaDeConexionDeUnErrorHttp() = runBlocking {
         assertTrue(repository.listarObjetivos().exceptionOrNull() is ConexionContenidosException)
+    }
+
+    @Test
+    fun crearActividadConDatosInvalidosUsaMensajePorDefectoSiLaRespuestaNoEsJson() = runBlocking {
+        val solicitud = ActividadRequest(17, "", "opcion", "¿2+2?", "4", "", "", "")
+        responder(400, "<html>Bad Request</html>")
+
+        val fallo = repository.crearActividad(solicitud).exceptionOrNull()
+
+        assertEquals("Revisa los datos ingresados. (HTTP 400)", fallo?.message)
+        peticion("POST", "/api/actividades")
+        Unit
+    }
+
+    @Test
+    fun actualizarObjetivoInexistenteUsaMensajePorDefectoSiElDetalleEstaVacio() = runBlocking {
+        responder(404, """{"mensaje":" "}""")
+        val solicitud = ObjetivoRequest(2, "MA02 OA 01", "Resolver sumas", true)
+
+        val fallo = repository.actualizarObjetivo(17, solicitud).exceptionOrNull()
+
+        assertEquals("El contenido ya no existe en el servidor. (HTTP 404)", fallo?.message)
+        peticion("PUT", "/api/objetivos/17")
+        Unit
+    }
+
+    @Test
+    fun obtenerActividadCon204InformaRespuestaInvalida() = runBlocking {
+        responder(204)
+
+        val fallo = repository.obtenerActividad(32).exceptionOrNull()
+
+        assertEquals("Respuesta inválida de ms-contenidos.", fallo?.message)
+        assertEquals("ms-contenidos respondió sin datos.", fallo?.cause?.message)
+    }
+
+    @Test
+    fun eliminarActividadSinConexionConservaLaCausa() = runBlocking {
+        val fallo = repository.eliminarActividad(32).exceptionOrNull()
+
+        assertTrue(fallo is ConexionContenidosException)
+        assertEquals("Sin conexión", fallo?.cause?.message)
+        peticion("DELETE", "/api/actividades/32")
+        Unit
+    }
+
+    @Test
+    fun propagaLaCancelacionDeLaConsulta() = runBlocking {
+        val api = mockk<ContenidosApi>()
+        coEvery { api.listarObjetivos() } throws CancellationException("Consulta cancelada")
+
+        try {
+            ContenidosRemoteRepository(api).listarObjetivos()
+            fail("Se esperaba CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Consulta cancelada", e.message)
+        }
     }
 
     private fun responder(estado: Int, cuerpo: String = "") {
