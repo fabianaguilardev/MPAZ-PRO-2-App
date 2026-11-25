@@ -22,7 +22,7 @@ Aplicación móvil Android desarrollada en **Kotlin y Jetpack Compose** para el 
 El proyecto se desarrolla mediante una metodología de trabajo colaborativo, utilizando herramientas de planificación y control de versiones.
 
 - **Tablero de Planificación (Trello):** [Tablero Trello - MPAZ PRO DSY1105](https://trello.com/b/M2z1OkvY/mpaz-pro-dsy1105)
-- **Repositorio Android:** [MPAZ PRO 2 App](https://github.com/fabianaguilardev/MPAZ-PRO-2-App)
+- **Repositorio Android:** [MPAZ PRO 2 App](https://github.com/miguelpastenm-web/MPAZ-PRO-2-App)
 - **Estrategia de Versionamiento:** Flujo de trabajo mediante ramas independientes, commits descriptivos e integración de cambios.
 - **Convención de Commits:** Uso de prefijos como `feat`, `fix`, `chore`, `docs` y `refactor`.
 
@@ -366,7 +366,7 @@ release/                     APK firmado del repositorio
 1. Clonar el repositorio:
 
    ```bash
-   git clone --branch main https://github.com/fabianaguilardev/MPAZ-PRO-2-App.git
+   git clone --branch main https://github.com/miguelpastenm-web/MPAZ-PRO-2-App.git
    cd MPAZ-PRO-2-App
    ```
 
