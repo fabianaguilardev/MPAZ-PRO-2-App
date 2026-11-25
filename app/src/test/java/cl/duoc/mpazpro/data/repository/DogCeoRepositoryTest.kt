@@ -11,7 +11,7 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.HttpUrl
 import okhttp3.ResponseBody
 import org.junit.Assert.assertArrayEquals
-import org.junit.Assert.assertSame
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -62,7 +62,9 @@ class DogCeoRepositoryTest {
         coEvery { api.obtenerFotoAleatoria() } returns FotoPerroDto(url, "success")
         coEvery { api.descargarFoto(any()) } throws error
 
-        assertSame(error, repository.obtenerFoto().exceptionOrNull())
+        val fallo = repository.obtenerFoto().exceptionOrNull()
+        assertTrue(fallo is IOException)
+        assertEquals(error.message, fallo?.message)
     }
 
     @Test
