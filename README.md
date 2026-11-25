@@ -130,7 +130,7 @@ El máximo de intentos se aplica al estudiante simulado cuando hay parámetros g
 
 ### 3. Actividades Interactivas para Estudiantes
 
-La pantalla `StudentActivityScreen` consulta las actividades de los objetivos remotos autorizados de la asignatura. Usa Room si falla la conexión o si la asignatura carece de objetivos remotos.
+La pantalla `StudentActivityScreen` consulta las actividades de los objetivos remotos autorizados de la asignatura. Usa Room si falla la conexión, si la asignatura carece de objetivos remotos o si sus objetivos autorizados todavía no tienen actividades.
 
 Sus características incluyen:
 
