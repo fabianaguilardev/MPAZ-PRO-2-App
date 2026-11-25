@@ -4,16 +4,20 @@ import cl.duoc.mpazpro.data.remote.ContenidosApi
 import cl.duoc.mpazpro.data.remote.dto.ActividadRequest
 import cl.duoc.mpazpro.data.remote.dto.ObjetivoRequest
 import com.google.gson.JsonParser
-import com.sun.net.httpserver.HttpServer
-import java.net.InetSocketAddress
+import java.io.IOException
 import java.util.concurrent.LinkedBlockingQueue
 import kotlinx.coroutines.runBlocking
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import okhttp3.MediaType
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody
+import okio.Buffer
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -23,36 +27,33 @@ class ContenidosRemoteRepositoryTest {
 
     private val peticiones = LinkedBlockingQueue<Peticion>()
     private val respuestas = LinkedBlockingQueue<Respuesta>()
-    private lateinit var servidor: HttpServer
     private lateinit var repository: ContenidosRemoteRepository
 
     @Before
-    fun iniciarServidor() {
-        servidor = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
-        servidor.createContext("/") { intercambio ->
-            intercambio.use {
-                peticiones.add(Peticion(
-                    it.requestMethod, it.requestURI.toString(),
-                    it.requestBody.bufferedReader().readText()
-                ))
-                val respuesta = respuestas.poll() ?: Respuesta(500, "{}")
-                val bytes = respuesta.cuerpo.toByteArray(Charsets.UTF_8)
-                it.responseHeaders.set("Content-Type", "application/json; charset=UTF-8")
-                it.sendResponseHeaders(respuesta.estado, if (respuesta.estado == 204) -1 else bytes.size.toLong())
-                if (respuesta.estado != 204) it.responseBody.write(bytes)
-            }
-        }
-        servidor.start()
+    fun prepararCliente() {
+        val cliente = OkHttpClient.Builder().addInterceptor { cadena ->
+            val solicitud = cadena.request()
+            val cuerpo = Buffer()
+            solicitud.body()?.writeTo(cuerpo)
+            val ruta = solicitud.url().encodedPath()
+            val consulta = solicitud.url().encodedQuery()?.let { "?$it" }.orEmpty()
+            peticiones.add(Peticion(solicitud.method(), ruta + consulta, cuerpo.readUtf8()))
+
+            val respuesta = respuestas.poll() ?: throw IOException("Sin conexión")
+            Response.Builder()
+                .request(solicitud)
+                .protocol(Protocol.HTTP_1_1)
+                .code(respuesta.estado)
+                .message("Respuesta de prueba")
+                .body(ResponseBody.create(MediaType.get("application/json"), respuesta.cuerpo))
+                .build()
+        }.build()
         val retrofit = Retrofit.Builder()
-            .baseUrl("http://127.0.0.1:${servidor.address.port}/")
+            .baseUrl("http://127.0.0.1:9082/")
+            .client(cliente)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         repository = ContenidosRemoteRepository(retrofit.create(ContenidosApi::class.java))
-    }
-
-    @After
-    fun detenerServidor() {
-        servidor.stop(0)
     }
 
     @Test
@@ -125,7 +126,6 @@ class ContenidosRemoteRepositoryTest {
 
     @Test
     fun distingueLaFaltaDeConexionDeUnErrorHttp() = runBlocking {
-        servidor.stop(0)
         assertTrue(repository.listarObjetivos().exceptionOrNull() is ConexionContenidosException)
     }
 
